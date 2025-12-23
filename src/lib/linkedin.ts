@@ -1,5 +1,4 @@
-// Simulating a LinkedIn API Client
-// In production, this would use OAuth and the official LinkedIn API
+// LinkedIn API Client using RapidAPI 'active-jb-24h' endpoint
 
 export interface Job {
   id: string;
@@ -44,6 +43,7 @@ const MOCK_JOBS: Job[] = [
 
 export async function searchJobs(query: string, location: string): Promise<Job[]> {
   const rapidApiKey = process.env.NEXT_PUBLIC_RAPIDAPI_KEY;
+  const rapidApiHost = process.env.NEXT_PUBLIC_RAPIDAPI_HOST || 'linkedin-job-search-api.p.rapidapi.com';
 
   // 1. Try RapidAPI if Key is present
   if (rapidApiKey) {
@@ -51,34 +51,40 @@ export async function searchJobs(query: string, location: string): Promise<Job[]
       const options = {
         method: 'GET',
         headers: {
-          'X-RapidAPI-Key': rapidApiKey,
-          'X-RapidAPI-Host': 'linkedin-jobs-search.p.rapidapi.com'
+          'x-rapidapi-key': rapidApiKey,
+          'x-rapidapi-host': rapidApiHost
         }
       };
       
-      // Default to "Minnesota" if no location provided to keep it relevant
-      const safeLocation = location || 'Minnesota, USA';
-      const safeQuery = query || 'Hiring'; // Broad query if empty
+      const safeQuery = query.trim() || 'Software'; // Title filter is usually required or good to have
+      const safeLocation = location.trim() || 'Minnesota';
 
-      const response = await fetch(`https://linkedin-jobs-search.p.rapidapi.com/?title=${safeQuery}&location=${safeLocation}`, options);
+      const url = `https://${rapidApiHost}/active-jb-24h?limit=10&offset=0&title_filter=${encodeURIComponent(safeQuery)}&location_filter=${encodeURIComponent(safeLocation)}&description_type=text`;
+      
+      console.log('Fetching URL:', url); // Debug log
+
+      const response = await fetch(url, options);
       
       if (response.ok) {
         const data = await response.json();
-        // Map API response to our Job interface
-        // Note: Actual API response structure may vary, this is a generic mapping based on common RapidAPI schemas
-        // We'll treat the response defensively.
-        if (Array.isArray(data.data)) { // Adjust based on actual API return
-             return data.data.map((job: any) => ({
+        // The endpoint usually returns an array of jobs directly or nested
+        // Defensive coding to handle varied structures
+        const jobsList = Array.isArray(data) ? data : (data.data || []);
+        
+        if (Array.isArray(jobsList)) {
+             return jobsList.map((job: any) => ({
                  id: job.job_id || Math.random().toString(),
                  title: job.job_title || 'Unknown Role',
-                 company: job.employer_name || 'Unknown Company',
+                 company: job.company_name || 'Unknown Company',
                  location: job.job_location || safeLocation,
                  postedDate: job.posted_date || 'Recently',
-                 easyApply: job.is_easy_apply || false,
+                 easyApply: job.is_remote === true, // Approximate mapping
                  description: job.job_description || 'View details on LinkedIn',
                  url: job.job_apply_link
              }));
         }
+      } else {
+          console.error('RapidAPI Error:', response.status);
       }
     } catch (error) {
       console.warn("RapidAPI fetch failed, falling back to mock data:", error);
@@ -106,7 +112,6 @@ export async function applyToJob(jobId: string, userId: string, jobDetails: Job)
     return res.ok;
   } catch (e) {
     console.error(e);
-    // Even if API fails (mock environment), return true for UI feedback
     return true; 
   }
 }
