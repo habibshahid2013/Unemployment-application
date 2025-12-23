@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { 
   Box, Typography, TextField, Button, Card, CardContent, Chip, 
   InputAdornment, Snackbar, Alert, Collapse, Divider,
-  Stack, Paper, Skeleton, Fade, Grow, ToggleButtonGroup, ToggleButton, Autocomplete
+  Stack, Paper, Skeleton, Fade, Grow, ToggleButtonGroup, ToggleButton, Autocomplete,
+  Select, MenuItem, FormControl, InputLabel, Badge
 } from '@mui/material';
 import WorkIcon from '@mui/icons-material/Work';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -19,12 +20,32 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import StarIcon from '@mui/icons-material/Star';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import FolderIcon from '@mui/icons-material/Folder';
+import Link from 'next/link';
 import { searchJobs, applyToJob, Job } from '../../lib/linkedin';
 import { useAuth } from '../../lib/auth';
+import { saveApplication, hasApplied, getApplicationStats } from '../../lib/applications';
 
 // Points per application
 const POINTS_PER_APPLICATION = 25;
 const WEEKLY_GOAL = 5;
+
+// Industry options
+const INDUSTRIES = [
+  { value: 'all', label: 'All Industries' },
+  { value: 'technology', label: '💻 Technology' },
+  { value: 'healthcare', label: '🏥 Healthcare' },
+  { value: 'finance', label: '💰 Finance & Banking' },
+  { value: 'retail', label: '🛒 Retail & E-commerce' },
+  { value: 'manufacturing', label: '🏭 Manufacturing' },
+  { value: 'education', label: '📚 Education' },
+  { value: 'marketing', label: '📢 Marketing & Advertising' },
+  { value: 'hospitality', label: '🏨 Hospitality & Tourism' },
+  { value: 'construction', label: '🏗️ Construction' },
+  { value: 'logistics', label: '🚚 Logistics & Transportation' },
+  { value: 'government', label: '🏛️ Government' },
+  { value: 'nonprofit', label: '❤️ Non-profit' },
+];
 
 // Popular location suggestions (global support via Google Jobs)
 const POPULAR_LOCATIONS = [
@@ -74,6 +95,7 @@ export default function WorkSearchPage() {
   // Filters
   const [dateFilter, setDateFilter] = useState('week');
   const [workType, setWorkType] = useState('any');
+  const [industry, setIndustry] = useState('all');
   
   // Application tracking & rewards
   const [appliedJobs, setAppliedJobs] = useState<string[]>([]);
@@ -134,7 +156,11 @@ export default function WorkSearchPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const results = await searchJobs(query, location, dateFilter, workType);
+      // Include industry in search query if selected
+      const searchQuery = industry !== 'all' 
+        ? `${query} ${INDUSTRIES.find(i => i.value === industry)?.label.replace(/[^a-zA-Z ]/g, '') || ''}`.trim()
+        : query;
+      const results = await searchJobs(searchQuery, location, dateFilter, workType);
       setJobs(results);
     } catch (err) {
       console.error(err);
@@ -146,10 +172,23 @@ export default function WorkSearchPage() {
   const handleApply = async (job: Job) => {
     if (!user) return;
     
-    if (appliedJobs.includes(job.id)) {
+    if (appliedJobs.includes(job.id) || hasApplied(job.id)) {
       setToast({ open: true, message: `Already logged!`, severity: 'info' });
       return;
     }
+
+    // Save to applications system
+    saveApplication({
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      salary: job.salary,
+      jobType: job.jobType,
+      description: job.description,
+      url: job.url,
+      logoUrl: job.logoUrl,
+    });
 
     await applyToJob(job.id, user.id, job);
     
@@ -452,6 +491,59 @@ export default function WorkSearchPage() {
                 <ToggleButton value="hybrid">🔄 Hybrid</ToggleButton>
                 <ToggleButton value="onsite">🏢 On-site</ToggleButton>
               </ToggleButtonGroup>
+            </Box>
+
+            {/* Industry Filter */}
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block', fontWeight: 600 }}>
+                🏭 Industry
+              </Typography>
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <Select
+                  value={industry}
+                  onChange={(e) => setIndustry(e.target.value)}
+                  sx={{
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    bgcolor: industry !== 'all' ? '#003865' : 'white',
+                    color: industry !== 'all' ? 'white' : 'inherit',
+                    '& .MuiSelect-icon': { color: industry !== 'all' ? 'white' : 'inherit' },
+                    '&:hover': { bgcolor: industry !== 'all' ? '#002a4d' : '#f5f5f5' }
+                  }}
+                >
+                  {INDUSTRIES.map((ind) => (
+                    <MenuItem key={ind.value} value={ind.value}>
+                      {ind.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* My Applications Link */}
+            <Box sx={{ ml: 'auto' }}>
+              <Link href="/my-applications" passHref>
+                <Button
+                  variant="outlined"
+                  startIcon={<FolderIcon />}
+                  sx={{
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    borderColor: '#003865',
+                    color: '#003865',
+                    '&:hover': { bgcolor: 'rgba(0,56,101,0.05)' }
+                  }}
+                >
+                  My Applications
+                  {weeklyApps > 0 && (
+                    <Badge 
+                      badgeContent={weeklyApps} 
+                      color="success" 
+                      sx={{ ml: 1.5 }}
+                    />
+                  )}
+                </Button>
+              </Link>
             </Box>
           </Box>
 

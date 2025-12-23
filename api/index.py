@@ -215,7 +215,175 @@ def submit_application(req: ApplicationRequest):
         return {"success": False, "error": str(e)}
 
 
-# --- Smart AI Endpoint ---
+# --- Follow-Up Email Generation Endpoint ---
+class FollowUpRequest(BaseModel):
+    jobTitle: str
+    company: str
+    jobDescription: str
+    resumeText: Optional[str] = None
+    contactName: Optional[str] = None
+    contactEmail: Optional[str] = None
+
+@app.post("/api/v1/generate-followup")
+def generate_followup(req: FollowUpRequest):
+    """Generate personalized follow-up email and LinkedIn message using LLM"""
+    groq_api_key = os.environ.get("GROQ_API_KEY")
+    
+    if not groq_api_key:
+        # Fallback to template-based response
+        contact = req.contactName or "Hiring Manager"
+        email_subject = f"Following Up - {req.jobTitle} Application at {req.company}"
+        email_body = f"""Dear {contact},
+
+I hope this email finds you well. I recently applied for the {req.jobTitle} position at {req.company} and wanted to follow up on my application.
+
+I am very excited about this opportunity and believe my skills and experience align well with the role. I would welcome the chance to discuss how I can contribute to your team.
+
+Please let me know if you need any additional information from me. I look forward to hearing from you.
+
+Best regards"""
+        
+        linkedin_msg = f"""Hi {contact},
+
+I recently applied for the {req.jobTitle} role at {req.company} and wanted to connect. I'm very interested in this opportunity and would love to learn more about the team and role. Would you be open to a brief conversation?
+
+Thank you!"""
+        
+        return {
+            "email": {"subject": email_subject, "body": email_body},
+            "linkedinMessage": linkedin_msg,
+            "ai_powered": False
+        }
+    
+    # Build prompt with context
+    resume_context = ""
+    if req.resumeText and len(req.resumeText) > 50:
+        resume_context = f"\n\nCandidate's Resume/Background:\n{req.resumeText[:2000]}"
+    
+    contact = req.contactName or "the hiring team"
+    
+    prompt = f"""Generate a professional follow-up email and LinkedIn message for a job application.
+
+Job Details:
+- Position: {req.jobTitle}
+- Company: {req.company}
+- Job Description (excerpt): {req.jobDescription[:1000]}
+
+Contact: {contact}
+{resume_context}
+
+Generate TWO things:
+1. A professional follow-up EMAIL with subject line and body. The email should:
+   - Be concise (under 200 words)
+   - Reference specific skills/experience matching the role
+   - Express genuine interest
+   - Have a clear call-to-action
+
+2. A short LinkedIn connection/follow-up MESSAGE (under 100 words) that is:
+   - Friendly and professional
+   - Personalized to the role
+   - Appropriate for LinkedIn's informal tone
+
+Respond in this exact JSON format:
+{{"email": {{"subject": "...", "body": "..."}}, "linkedinMessage": "..."}}
+
+Only output the JSON, nothing else."""
+
+    try:
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {groq_api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "llama-3.3-70b-versatile",
+                "messages": [
+                    {"role": "system", "content": "You are a professional career coach helping job seekers write compelling follow-up messages. Always respond with valid JSON only."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1000
+            },
+            timeout=15
+        )
+        
+        if response.ok:
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
+            
+            # Parse JSON from response
+            import json
+            start = content.find("{")
+            end = content.rfind("}") + 1
+            if start >= 0 and end > start:
+                result = json.loads(content[start:end])
+                result["ai_powered"] = True
+                return result
+        
+        raise Exception("Failed to parse LLM response")
+        
+    except Exception as e:
+        print(f"Follow-up generation error: {e}")
+        # Return fallback
+        contact = req.contactName or "Hiring Manager"
+        return {
+            "email": {
+                "subject": f"Following Up - {req.jobTitle} Application",
+                "body": f"Dear {contact},\n\nI wanted to follow up on my application for the {req.jobTitle} position at {req.company}. I remain very interested in this opportunity and would welcome the chance to discuss how I can contribute to your team.\n\nBest regards"
+            },
+            "linkedinMessage": f"Hi! I recently applied for the {req.jobTitle} role at {req.company} and wanted to connect. Would love to learn more about the opportunity!",
+            "ai_powered": False,
+            "error": str(e)
+        }
+
+
+# --- Contact Discovery Endpoint ---
+@app.get("/api/v1/find-contact")
+def find_contact(company: str, job_title: str = ""):
+    """Search for hiring manager/recruiter contact info"""
+    serpapi_key = os.environ.get("SERPAPI_KEY")
+    
+    if not serpapi_key:
+        return {"contacts": [], "error": "SERPAPI_KEY not configured"}
+    
+    try:
+        # Search for company recruiters/hiring managers
+        query = f"{company} recruiter OR hiring manager {job_title}"
+        
+        response = requests.get(
+            "https://serpapi.com/search",
+            params={
+                "engine": "google",
+                "q": f"site:linkedin.com/in {query}",
+                "api_key": serpapi_key,
+                "num": 5
+            },
+            timeout=10
+        )
+        
+        contacts = []
+        if response.ok:
+            data = response.json()
+            results = data.get("organic_results", [])
+            
+            for result in results[:5]:
+                title = result.get("title", "")
+                link = result.get("link", "")
+                snippet = result.get("snippet", "")
+                
+                if "linkedin.com/in" in link:
+                    contacts.append({
+                        "name": title.split(" - ")[0] if " - " in title else title,
+                        "title": snippet[:100],
+                        "linkedinUrl": link
+                    })
+        
+        return {"contacts": contacts}
+        
+    except Exception as e:
+        print(f"Contact search error: {e}")
+        return {"contacts": [], "error": str(e)}
 class ChatRequest(BaseModel):
     message: str
     userName: str
