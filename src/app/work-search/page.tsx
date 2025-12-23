@@ -83,6 +83,7 @@ export default function WorkSearchPage() {
   // Job title suggestions
   const [jobSuggestions, setJobSuggestions] = useState<string[]>([]);
   const [relatedJobs, setRelatedJobs] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const [alternativeJobs, setAlternativeJobs] = useState<string[]>([]);
 
   useEffect(() => {
@@ -457,9 +458,28 @@ export default function WorkSearchPage() {
           {/* AI Job Suggestions */}
           {(jobSuggestions.length > 0 || relatedJobs.length > 0 || alternativeJobs.length > 0) && (
             <Box sx={{ mt: 3, p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
-              <Typography variant="caption" color="primary" fontWeight="700" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                ✨ AI Suggestions
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: showSuggestions ? 1 : 0 }}>
+                <Typography variant="caption" color="primary" fontWeight="700" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  ✨ AI Suggestions
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() => setShowSuggestions(!showSuggestions)}
+                  endIcon={showSuggestions ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  sx={{ 
+                    minWidth: 'auto', 
+                    px: 1.5, 
+                    py: 0.5,
+                    fontSize: '0.75rem',
+                    color: '#666',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' }
+                  }}
+                >
+                  {showSuggestions ? 'Hide' : 'Show'}
+                </Button>
+              </Box>
+              
+              <Collapse in={showSuggestions}>
               
               {jobSuggestions.length > 0 && (
                 <Box sx={{ mb: 2 }}>
@@ -524,6 +544,7 @@ export default function WorkSearchPage() {
                   </Stack>
                 </Box>
               )}
+              </Collapse>
             </Box>
           )}
         </form>
