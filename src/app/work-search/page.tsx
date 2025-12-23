@@ -96,6 +96,7 @@ export default function WorkSearchPage() {
   const [dateFilter, setDateFilter] = useState('week');
   const [workType, setWorkType] = useState('any');
   const [industry, setIndustry] = useState('all');
+  const [radius, setRadius] = useState('50');
   
   // Application tracking & rewards
   const [appliedJobs, setAppliedJobs] = useState<string[]>([]);
@@ -156,11 +157,10 @@ export default function WorkSearchPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      // Include industry in search query if selected
       const searchQuery = industry !== 'all' 
         ? `${query} ${INDUSTRIES.find(i => i.value === industry)?.label.replace(/[^a-zA-Z ]/g, '') || ''}`.trim()
         : query;
-      const results = await searchJobs(searchQuery, location, dateFilter, workType);
+      const results = await searchJobs(searchQuery, location, dateFilter, workType, radius);
       setJobs(results);
     } catch (err) {
       console.error(err);
@@ -516,6 +516,33 @@ export default function WorkSearchPage() {
                       {ind.label}
                     </MenuItem>
                   ))}
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Radius Filter */}
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block', fontWeight: 600 }}>
+                📏 Distance
+              </Typography>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <Select
+                  value={radius}
+                  onChange={(e) => setRadius(e.target.value)}
+                  sx={{
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    bgcolor: radius !== '50' ? '#003865' : 'white',
+                    color: radius !== '50' ? 'white' : 'inherit',
+                    '& .MuiSelect-icon': { color: radius !== '50' ? 'white' : 'inherit' },
+                    '&:hover': { bgcolor: radius !== '50' ? '#002a4d' : '#f5f5f5' }
+                  }}
+                >
+                  <MenuItem value="5">5 miles</MenuItem>
+                  <MenuItem value="10">10 miles</MenuItem>
+                  <MenuItem value="25">25 miles</MenuItem>
+                  <MenuItem value="50">50 miles</MenuItem>
+                  <MenuItem value="100">100 miles</MenuItem>
                 </Select>
               </FormControl>
             </Box>

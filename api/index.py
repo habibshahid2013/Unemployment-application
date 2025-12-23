@@ -21,7 +21,8 @@ def search_jobs(
     query: str = "", 
     location: str = "Minnesota", 
     date_filter: str = "week",  # today, 3days, week, month
-    work_type: str = "any"  # remote, hybrid, onsite, any
+    work_type: str = "any",  # remote, hybrid, onsite, any
+    radius: str = "50"  # miles from location
 ):
     # SerpApi Google Jobs API
     serpapi_key = os.environ.get("SERPAPI_KEY")
@@ -49,7 +50,7 @@ def search_jobs(
         "q": f"{q}{work_type_query} {loc}",
         "hl": "en",
         "api_key": serpapi_key,
-        "lrad": "50"  # 50-mile radius from location
+        "lrad": radius  # configurable radius from location
     }
     
     # Date filter chips
