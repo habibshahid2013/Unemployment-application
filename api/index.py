@@ -68,19 +68,26 @@ def search_jobs(
         all_jobs = []
         seen_ids = set()
         
-        # Fetch 3 pages of results (each page ~10 jobs = 30-50 total)
+        # Fetch up to 3 pages
         for page in range(3):
             params = base_params.copy()
             if page > 0:
-                params["start"] = page * 10  # Google Jobs pagination
+                params["start"] = page * 10
             
-            response = requests.get(url, params=params, timeout=15)
-            response.raise_for_status()
-            data = response.json()
-            
-            jobs_list = data.get("jobs_results", [])
-            if not jobs_list:
-                break  # No more results
+            try:
+                response = requests.get(url, params=params, timeout=10)
+                # If a secondary page fails, we just return the results from the successful pages
+                if response.status_code != 200:
+                    print(f"SerpApi Page {page} failed with {response.status_code}: {response.text}")
+                    break
+                
+                data = response.json()
+                jobs_list = data.get("jobs_results", [])
+                if not jobs_list:
+                    break 
+            except Exception as e:
+                print(f"Error fetching SerpApi page {page}: {e}")
+                break
             
             for job in jobs_list:
                 job_id = job.get("job_id", "")
