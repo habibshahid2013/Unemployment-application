@@ -25,6 +25,9 @@ export default function ApplyPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [optIn, setOptIn] = useState(true);
+  
+  // Anti-Fraud: Honeypot & Rate Limit State
+  const [honeypot, setHoneypot] = useState('');
 
   // Mock form state
   const [formData, setFormData] = useState({
@@ -53,6 +56,26 @@ export default function ApplyPage() {
   const handleSubmit = async () => {
     setLoading(true);
     
+    // 1. Anti-Bot: Check Honeypot
+    if (honeypot) {
+      console.warn("Bot detected: Honeypot field filled.");
+      setLoading(false);
+      // Silently fail or redirect
+      router.push('/dashboard'); 
+      return;
+    }
+
+    // 2. Anti-Spam: Rate Limiting
+    const lastSubmission = localStorage.getItem('last_application_time');
+    if (lastSubmission) {
+      const timeDiff = Date.now() - parseInt(lastSubmission);
+      if (timeDiff < 10 * 60 * 1000) { // 10 minutes
+        alert("Duplicate application detected. You have submitted an application recently. Please wait before applying again.");
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       // Simulate API submission
       const res = await fetch('/api/status', {
@@ -64,9 +87,11 @@ export default function ApplyPage() {
       const data = await res.json();
       
       if (optIn) {
-        // In a real app we'd trigger this on the server
         console.log('Notifying user...', data.id);
       }
+
+      // Record successful submission time
+      localStorage.setItem('last_application_time', Date.now().toString());
 
       // Redirect
       router.push('/dashboard?newApplication=true');
@@ -81,6 +106,11 @@ export default function ApplyPage() {
 
   return (
     <Box maxWidth="lg" mx="auto">
+      <Alert severity="warning" sx={{ mb: 4, fontWeight: 500 }} icon={false}>
+        <strong>FRAUD WARNING:</strong> Submitting false information specifically to obtain unemployment benefits is a federal crime. 
+        Violators may face fines, imprisonment, and permanent disqualification from future benefits.
+      </Alert>
+
       <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
         Apply for Benefits
       </Typography>
@@ -95,6 +125,11 @@ export default function ApplyPage() {
 
       <Card variant="outlined" sx={{ minHeight: 400 }}>
         <CardContent sx={{ p: 4 }}>
+          {/* Honeypot Field (Hidden from humans) */}
+          <Box sx={{ display: 'none' }} aria-hidden="true">
+             <TextField label="Website" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} tabIndex={-1} autoComplete="off" />
+          </Box>
+
           {activeStep === 0 && (
             <Stack spacing={3}>
               <Box sx={{ display: 'grid', gridTemplateColumns: { sm: '1fr 1fr' }, gap: 3 }}>
