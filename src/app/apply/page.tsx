@@ -1,22 +1,31 @@
 'use client';
 
-import { useState } from 'react';
-import { 
-  Box, Typography, Stepper, Step, StepLabel, Button, TextField, 
-  Card, CardContent, FormControlLabel, Checkbox, Snackbar, Alert, Stack 
+import { useState, useEffect } from 'react';
+import {
+  Box, Typography, Stepper, Step, StepLabel, Button, TextField,
+  Card, CardContent, FormControlLabel, Checkbox, Snackbar, Alert, Stack
 } from '@mui/material';
 import Grid from '@mui/material/Grid'; // Keep for minor usage if needed but prefer Stack
 import { sendMockNotification } from '../../lib/notifications';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../../lib/auth';
 
 const steps = ['Identity', 'Employment', 'Separation', 'Review'];
 
 export default function ApplyPage() {
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/auth/login?redirect=/apply');
+    }
+  }, [isAuthenticated, router]);
+
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [optIn, setOptIn] = useState(true);
-  
+
   // Mock form state
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', ssn: '', email: '', phone: '',

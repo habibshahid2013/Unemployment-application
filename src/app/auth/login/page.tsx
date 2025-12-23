@@ -27,60 +27,63 @@ export default function LoginPage() {
 
   return (
     <Box sx={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      minHeight: '80vh', 
-      alignItems: 'center',
-      bgcolor: 'grey.50'
-    }}>
-      <Card elevation={4} sx={{ maxWidth: 400, width: '100%', mx: 2 }}>
-        <CardContent sx={{ p: 4 }}>
-          <Typography variant="h5" component="h1" gutterBottom fontWeight="bold" textAlign="center">
-            Sign In
-          </Typography>
-          <Typography variant="body2" color="text.secondary" textAlign="center" mb={3}>
-            Access your Minnesota Unemployment Account
-          </Typography>
+    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
+      <Paper elevation={0} sx={{ p: 4, width: '100%', maxWidth: 400, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+        <Typography variant="h5" component="h1" gutterBottom fontWeight="bold" align="center">
+          Log In
+        </Typography>
+        <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+          Access your unemployment benefits account
+        </Typography>
 
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Button 
+          variant="outlined" 
+          fullWidth 
+          startIcon={<GoogleIcon />} 
+          onClick={handleGoogleLogin}
+          sx={{ mb: 3, textTransform: 'none', fontWeight: 600, color: 'text.primary', borderColor: 'divider' }}
+        >
+          Sign in with Google
+        </Button>
 
-          <form onSubmit={handleSubmit}>
+        <Divider sx={{ mb: 3 }}>
+          <Typography variant="caption" color="text.secondary">OR CONTINUE WITH EMAIL</Typography>
+        </Divider>
+
+        <form onSubmit={handleSubmit}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
-              label="Email Address / Username"
-              fullWidth
-              margin="normal"
+              label="Email Address"
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoFocus
+              fullWidth
+              required
             />
             <TextField
               label="Password"
               type="password"
-              fullWidth
-              margin="normal"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              helperText="For demo, use any password > 3 chars"
+              fullWidth
+              required
             />
-            
             <Button 
               type="submit" 
               variant="contained" 
-              fullWidth 
               size="large" 
-              sx={{ mt: 3, mb: 2 }}
+              fullWidth
+              sx={{ mt: 2 }}
             >
               Log In
             </Button>
             
-            <Box textAlign="center">
-              <Typography variant="caption" color="text.secondary">
-                Need an account? <a href="/apply" style={{ color: '#1976d2' }}>Apply for Benefits</a>
-              </Typography>
-            </Box>
-          </form>
-        </CardContent>
-      </Card>
+            <Alert severity="info" sx={{ mt: 2 }}>
+              Default: Any email/password will work.
+            </Alert>
+          </Box>
+        </form>
+      </Paper>
     </Box>
   );
 }

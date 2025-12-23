@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -12,17 +13,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Initialize Firebase only if config is present
-let app;
-let db: any = null;
+// Initialize Firebase (mock-safe)
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const db = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? getFirestore(app) : null;
+const auth = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? getAuth(app) : null;
+const googleProvider = new GoogleAuthProvider();
 
-if (typeof window !== 'undefined' && firebaseConfig.apiKey) {
-    if (!getApps().length) {
-        app = initializeApp(firebaseConfig);
-    } else {
-        app = getApps()[0];
-    }
-    db = getFirestore(app);
-}
-
-export { db };
+export { app, db, auth, googleProvider };
