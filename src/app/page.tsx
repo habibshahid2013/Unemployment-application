@@ -22,6 +22,7 @@ import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FolderIcon from '@mui/icons-material/Folder';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 // Data & Libs
 import { searchJobs, Job } from '../lib/linkedin';
@@ -485,22 +486,42 @@ export default function Home() {
                              {job.workFromHome && <Chip label="🏠 Remote" size="small" variant="outlined" sx={{ fontWeight: 600, bgcolor: '#f0f7ff' }} />}
                            </Stack>
 
-                           <Button 
-                             variant="contained" 
-                             fullWidth 
-                             endIcon={<ArrowForwardIcon />}
-                             component={Link}
-                             href={`/work-search`}
-                             sx={{ 
-                               borderRadius: 2, 
-                               py: 1.2, 
-                               fontWeight: 700,
-                               bgcolor: '#003865',
-                               '&:hover': { bgcolor: '#002a4d' }
-                             }}
-                           >
-                             Details & Tracking
-                           </Button>
+                           <Stack direction="row" spacing={2}>
+                             <Button 
+                               variant="contained" 
+                               fullWidth 
+                               endIcon={<OpenInNewIcon />}
+                               component="a"
+                               href={job.url || '#'}
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               sx={{ 
+                                 borderRadius: 2, 
+                                 py: 1.2, 
+                                 fontWeight: 700,
+                                 background: 'linear-gradient(135deg, #78BE20 0%, #5da010 100%)',
+                                 '&:hover': { background: 'linear-gradient(135deg, #5da010 0%, #4a8a0d 100%)' }
+                               }}
+                             >
+                               Apply
+                             </Button>
+                             <Button 
+                               variant="outlined" 
+                               fullWidth 
+                               component={Link}
+                               href={`/work-search`}
+                               sx={{ 
+                                 borderRadius: 2, 
+                                 py: 1.2, 
+                                 fontWeight: 700,
+                                 borderColor: '#003865',
+                                 color: '#003865',
+                                 '&:hover': { bgcolor: 'rgba(0,56,101,0.05)', borderColor: '#002a4d' }
+                               }}
+                             >
+                               Track
+                             </Button>
+                           </Stack>
                          </CardContent>
                        </Card>
                      </Grid>
