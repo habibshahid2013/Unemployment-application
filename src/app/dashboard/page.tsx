@@ -8,6 +8,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import ArticleIcon from '@mui/icons-material/Article';
 import WorkIcon from '@mui/icons-material/Work';
 import { useEffect, useState, Suspense } from 'react';
+import LinkedInConnect from '../../components/LinkedInConnect';
 
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -25,7 +26,7 @@ function DashboardContent() {
     // 2. Fetch mock data
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/status');
+        const res = await fetch('/api/v1/status');
         const data = await res.json();
         setStatusData(data);
       } catch (error) {
@@ -189,6 +190,8 @@ function DashboardContent() {
               <LinearProgress variant="determinate" value={80} sx={{ bgcolor: 'rgba(255,255,255,0.3)', '& .MuiLinearProgress-bar': { bgcolor: 'white' } }} />
             </CardContent>
           </Card>
+
+          <LinkedInConnect />
 
           <Card variant="outlined" sx={{ bgcolor: 'transparent' }}>
             <CardContent>

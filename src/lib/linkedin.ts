@@ -1,4 +1,4 @@
-// LinkedIn API Client using RapidAPI 'active-jb-24h' endpoint
+// Google Jobs API Client via SerpApi
 
 export interface Job {
   id: string;
@@ -6,9 +6,20 @@ export interface Job {
   company: string;
   location: string;
   postedDate: string;
+  freshnessScore?: number;
   easyApply: boolean;
   description: string;
   url?: string;
+  logoUrl?: string;
+  // Enhanced details
+  salary?: string;
+  jobType?: string;
+  workFromHome?: boolean;
+  applySources?: string[];
+  qualifications?: string[];
+  benefits?: string[];
+  responsibilities?: string[];
+  via?: string;
 }
 
 const MOCK_JOBS: Job[] = [
@@ -41,70 +52,52 @@ const MOCK_JOBS: Job[] = [
   { id: 'li-602', title: 'Accountant', company: 'WealthOps', location: 'Eagan, MN', postedDate: '4 days ago', easyApply: false, description: 'Tax preparation and financial reporting.' }
 ];
 
-export async function searchJobs(query: string, location: string): Promise<Job[]> {
-  const rapidApiKey = process.env.NEXT_PUBLIC_RAPIDAPI_KEY;
-  const rapidApiHost = process.env.NEXT_PUBLIC_RAPIDAPI_HOST || 'linkedin-job-search-api.p.rapidapi.com';
+// Search via Python Backend (hides API keys)
+export async function searchJobs(
+  query: string, 
+  location: string,
+  dateFilter: string = 'week',
+  workType: string = 'any'
+): Promise<Job[]> {
+  try {
+    const params = new URLSearchParams({
+      query: query.trim(),
+      location: location.trim(),
+      date_filter: dateFilter,
+      work_type: workType
+    });
 
-  // 1. Try RapidAPI if Key is present
-  if (rapidApiKey) {
-    try {
-      const options = {
-        method: 'GET',
-        headers: {
-          'x-rapidapi-key': rapidApiKey,
-          'x-rapidapi-host': rapidApiHost
-        }
-      };
-      
-      const safeQuery = query.trim() || 'Software'; // Title filter is usually required or good to have
-      const safeLocation = location.trim() || 'Minnesota';
-
-      const url = `https://${rapidApiHost}/active-jb-24h?limit=10&offset=0&title_filter=${encodeURIComponent(safeQuery)}&location_filter=${encodeURIComponent(safeLocation)}&description_type=text`;
-      
-      console.log('Fetching URL:', url); // Debug log
-
-      const response = await fetch(url, options);
-      
-      if (response.ok) {
-        const data = await response.json();
-        // The endpoint usually returns an array of jobs directly or nested
-        // Defensive coding to handle varied structures
-        const jobsList = Array.isArray(data) ? data : (data.data || []);
-        
-        if (Array.isArray(jobsList)) {
-             return jobsList.map((job: any) => ({
-                 id: job.job_id || Math.random().toString(),
-                 title: job.job_title || 'Unknown Role',
-                 company: job.company_name || 'Unknown Company',
-                 location: job.job_location || safeLocation,
-                 postedDate: job.posted_date || 'Recently',
-                 easyApply: job.is_remote === true, // Approximate mapping
-                 description: job.job_description || 'View details on LinkedIn',
-                 url: job.job_apply_link
-             }));
-        }
-      } else {
-          console.error('RapidAPI Error:', response.status);
+    const response = await fetch(`/api/v1/search?${params.toString()}`);
+    
+    if (response.ok) {
+      const result = await response.json();
+      // Check if we got an error from the backend
+      if (result.error) {
+        console.warn("Backend API error:", result.error);
+      } else if (Array.isArray(result.data) && result.data.length > 0) {
+        return result.data;
       }
-    } catch (error) {
-      console.warn("RapidAPI fetch failed, falling back to mock data:", error);
     }
+  } catch (error) {
+    console.warn("Backend API fetch failed, falling back to mock data:", error);
   }
 
-  // 2. Fallback to Mock Data
-  await new Promise(resolve => setTimeout(resolve, 600)); // Simulate latency
+  // Fallback to Mock Data
+  await new Promise(resolve => setTimeout(resolve, 600)); 
   return MOCK_JOBS.filter(job => 
     (job.title.toLowerCase().includes(query.toLowerCase()) || query === '') &&
     (job.location.toLowerCase().includes(location.toLowerCase()) || location === '')
   );
 }
 
+
+
 export async function applyToJob(jobId: string, userId: string, jobDetails: Job): Promise<boolean> {
   // Simulate application process
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   try {
-    const res = await fetch('/api/work-log', {
+    const res = await fetch('/api/v1/work-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, job: jobDetails })

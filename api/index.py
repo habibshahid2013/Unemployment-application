@@ -1,0 +1,362 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import os
+from pydantic import BaseModel
+
+app = FastAPI(docs_url="/api/v1/docs", openapi_url="/api/v1/openapi.json")
+# Allow CORS for development logic
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+import requests
+from typing import Optional
+
+@app.get("/api/v1/search")
+def search_jobs(
+    query: str = "", 
+    location: str = "Minnesota", 
+    date_filter: str = "week",  # today, 3days, week, month
+    work_type: str = "any"  # remote, hybrid, onsite, any
+):
+    # SerpApi Google Jobs API
+    serpapi_key = os.environ.get("SERPAPI_KEY")
+    
+    if not serpapi_key:
+        return {"error": "SERPAPI_KEY not configured on server"}
+
+    url = "https://serpapi.com/search"
+    
+    # Safe query params
+    q = query.strip() if query.strip() else "Software"
+    loc = location.strip() if location.strip() else "Minnesota"
+    
+    # Add work type to query if specified
+    work_type_query = ""
+    if work_type == "remote":
+        work_type_query = " remote"
+    elif work_type == "hybrid":
+        work_type_query = " hybrid"
+    elif work_type == "onsite":
+        work_type_query = " on-site"
+    
+    params = {
+        "engine": "google_jobs",
+        "q": f"{q}{work_type_query} {loc}",
+        "hl": "en",
+        "api_key": serpapi_key
+    }
+    
+    # Date filter chips
+    date_chips = {
+        "today": "date_posted:today",
+        "3days": "date_posted:3days",
+        "week": "date_posted:week",
+        "month": "date_posted:month"
+    }
+    if date_filter in date_chips:
+        params["chips"] = date_chips[date_filter]
+
+    try:
+        response = requests.get(url, params=params, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        
+        jobs_list = data.get("jobs_results", [])
+        normalized = []
+        
+        for job in jobs_list[:15]:  # Increased to 15 results
+            extensions = job.get("detected_extensions", {})
+            
+            # Extract rich details
+            posted_at = extensions.get("posted_at", "Recently")
+            salary = extensions.get("salary", None)
+            schedule_type = extensions.get("schedule_type", None)
+            work_from_home = extensions.get("work_from_home", False)
+            job_type = None
+            
+            # Parse schedule to determine job type
+            if schedule_type:
+                job_type = schedule_type
+            elif "Full-time" in str(job.get("extensions", [])):
+                job_type = "Full-time"
+            elif "Part-time" in str(job.get("extensions", [])):
+                job_type = "Part-time"
+            elif "Contract" in str(job.get("extensions", [])):
+                job_type = "Contract"
+            
+            # Calculate posting freshness score (lower = more recent)
+            freshness_score = 100
+            posted_lower = posted_at.lower()
+            if "hour" in posted_lower:
+                freshness_score = 1
+            elif "today" in posted_lower or "just" in posted_lower:
+                freshness_score = 2
+            elif "1 day" in posted_lower or "yesterday" in posted_lower:
+                freshness_score = 3
+            elif "2 day" in posted_lower:
+                freshness_score = 4
+            elif "3 day" in posted_lower:
+                freshness_score = 5
+            elif "day" in posted_lower:
+                freshness_score = 10
+            elif "week" in posted_lower:
+                freshness_score = 20
+            
+            # Get apply link
+            apply_options = job.get("apply_options", [])
+            apply_url = apply_options[0].get("link") if apply_options else job.get("share_link")
+            
+            # Get all apply sources
+            apply_sources = [opt.get("title", "Apply") for opt in apply_options[:3]] if apply_options else []
+            
+            # Build highlights from extensions
+            highlights = job.get("job_highlights", [])
+            qualifications = []
+            benefits = []
+            responsibilities = []
+            
+            for highlight in highlights:
+                title = highlight.get("title", "").lower()
+                items = highlight.get("items", [])
+                if "qualif" in title or "require" in title:
+                    qualifications = items[:5]
+                elif "benefit" in title:
+                    benefits = items[:5]
+                elif "responsib" in title or "duties" in title:
+                    responsibilities = items[:3]
+            
+            normalized.append({
+                "id": job.get("job_id", "N/A"),
+                "title": job.get("title", "Unknown Role"),
+                "company": job.get("company_name", "Unknown Company"),
+                "location": job.get("location", loc),
+                "postedDate": posted_at,
+                "freshnessScore": freshness_score,
+                "easyApply": len(apply_options) > 0,
+                "description": job.get("description", "View details.")[:800],
+                "url": apply_url,
+                "logoUrl": job.get("thumbnail"),
+                # Enhanced details
+                "salary": salary,
+                "jobType": job_type,
+                "workFromHome": work_from_home,
+                "applySources": apply_sources,
+                "qualifications": qualifications,
+                "benefits": benefits,
+                "responsibilities": responsibilities,
+                "via": job.get("via", "")
+            })
+        
+        # Sort by freshness (most recent first)
+        normalized.sort(key=lambda x: x["freshnessScore"])
+            
+        return {"data": normalized, "total": len(normalized)}
+        
+    except Exception as e:
+        print(f"Error fetching jobs from SerpApi: {str(e)}")
+        return {"data": [], "error": str(e)}
+
+    return {
+        "connected": True,
+        "name": "Alex Application",
+        "headline": "Software Engineer | #OpenToWork",
+        "avatarUrl": "https://ui-avatars.com/api/?name=Alex+A&background=0077b5&color=fff",
+        "openToWork": True,
+        "profileUrl": "https://www.linkedin.com/in/"
+    }
+
+
+# Initialize Firebase Admin
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+try:
+    if not firebase_admin._apps:
+        # Attempts to load default credentials (works on Vercel if env vars are set)
+        firebase_admin.initialize_app()
+    db = firestore.client()
+except Exception as e:
+    print(f"Firebase Admin Init Warning: {e}")
+    db = None
+
+# --- Application Submission Endpoint ---
+class ApplicationRequest(BaseModel):
+    userId: str
+    jobId: Optional[str] = None
+    answers: dict
+
+@app.post("/api/v1/apply")
+def submit_application(req: ApplicationRequest):
+    if not db:
+        return {"success": False, "error": "Database not initialized on server."}
+
+    try:
+        # Server-side Validation
+        if len(req.answers) < 3:
+             return {"success": False, "error": "Incomplete application."}
+
+        # Write to Firestore (Securely)
+        doc_ref = db.collection("applications").add({
+            "userId": req.userId,
+            "jobId": req.jobId or "general",
+            "answers": req.answers,
+            "status": "received",
+            "submittedAt": firestore.SERVER_TIMESTAMP
+        })
+        
+        return {"success": True, "id": doc_ref[1].id}
+    except Exception as e:
+        print(f"Apply Error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+# --- Smart AI Endpoint ---
+class ChatRequest(BaseModel):
+    message: str
+    userName: str
+    context: Optional[str] = None # e.g. "Browsing Job: Software Engineer"
+
+@app.post("/api/v1/ai/chat-assist")
+def ai_chat_assist(req: ChatRequest):
+    msg = req.message.lower()
+    ctx = req.context or ""
+    response_text = ""
+
+    # Context-Aware Logic
+    if "Software Engineer" in ctx and ("salary" in msg or "pay" in msg):
+        response_text = "Software Engineer roles in MN typically range from $90k - $140k depending on experience."
+    elif "resume" in msg:
+        response_text = f"Hi {req.userName}, strictly format your resume for ATS systems. Use standard headings like 'Experience' and 'Education'."
+    elif "interview" in msg:
+         response_text = f"For {ctx} interviews, be ready to discuss your past projects in depth using the STAR method."
+    elif "job" in msg or "search" in msg:
+         response_text = "I recommend checking the 'Job Feed' for the latest tech openings in Minnesota."
+    else:
+         response_text = f"I see you're interested in {ctx if ctx else 'career advice'}. How can the community help?"
+
+    return {"reply": response_text}
+
+
+# --- In-Memory Store Logic ---
+import time
+from typing import List, Dict, Any
+
+class ApplicationModel(BaseModel):
+    id: str
+    firstName: str
+    lastName: str
+    submittedAt: str = ""
+    status: str
+    step: int
+    progress: int
+    estimatedCompletion: str
+    week: str
+    notifications: List[Dict[str, Any]] = []
+    workLog: List[Dict[str, Any]] = []
+
+class InMemoryStore:
+    def __init__(self):
+        self.applications = {}
+        # Seed
+        self.seed()
+
+    def seed(self):
+        self.applications['MN-2024-555'] = {
+            "id": 'MN-2024-555',
+            "firstName": 'John',
+            "lastName": 'Doe',
+            "submittedAt": "2024-12-22T10:00:00Z",
+            "status": 'Pending Review',
+            "step": 1,
+            "progress": 33,
+            "estimatedCompletion": '5-7 business days',
+            "week": 'Dec 15 - Dec 21',
+            "notifications": [
+                { "id": 1, "message": 'Application Received', "date": 'Dec 22, 2:30 PM', "type": 'success' },
+                { "id": 2, "message": 'Handbook Available', "date": 'Dec 22, 2:31 PM', "type": 'info' }
+            ],
+            "workLog": []
+        }
+
+    def get(self, app_id: str):
+        return self.applications.get(app_id)
+
+    def get_all(self):
+        return list(self.applications.values())
+
+    def update(self, app_id: str, updates: Dict):
+        if app_id in self.applications:
+            self.applications[app_id].update(updates)
+            return self.applications[app_id]
+        return None
+
+store = InMemoryStore()
+
+# --- Ported Endpoints ---
+
+@app.get("/api/v1/status")
+def get_status():
+    # Return seeded app for MVP dashboard consistency
+    return store.get('MN-2024-555')
+
+@app.get("/api/v1/admin")
+def get_admin_data():
+    return store.get_all()
+
+class LogRequest(BaseModel):
+    userId: str
+    job: Dict[str, Any]
+
+@app.post("/api/v1/work-log")
+def add_work_log(req: LogRequest):
+    app = store.get(req.userId) or store.get('MN-2024-555') # Fallback to seed
+    if not app:
+        return {"error": "User not found"}
+    
+    log_entry = {
+        "id": f"log-{int(time.time())}",
+        "jobTitle": req.job.get('title'),
+        "company": req.job.get('company'),
+        "dateApplied": "Just now", # Simpler date handling
+        "status": "Applied"
+    }
+    
+    current_log = app.get('workLog', [])
+    store.update(app['id'], {"workLog": [log_entry] + current_log})
+    return {"success": True, "log": log_entry}
+
+class AdminAction(BaseModel):
+    id: str
+    action: str
+
+@app.patch("/api/v1/admin")
+def admin_action(req: AdminAction):
+    app = store.get(req.id)
+    if not app:
+        return {"error": "App not found"}
+        
+    updates = {}
+    if req.action == 'approve':
+        next_step = min(app['step'] + 1, 3)
+        updates['step'] = next_step
+        
+        if next_step == 1:
+            updates.update({"status": "Under Review", "progress": 33})
+            app['notifications'].append({"id": int(time.time()), "message": "Your application is being reviewed.", "type": "info"})
+        elif next_step == 2:
+             updates.update({"status": "Determination Pending", "progress": 66})
+             app['notifications'].append({"id": int(time.time()), "message": "Determination pending.", "type": "info"})
+        elif next_step == 3:
+             updates.update({"status": "Payment Issued", "progress": 100})
+             app['notifications'].append({"id": int(time.time()), "message": "Payment authorized.", "type": "success"})
+             
+    store.update(req.id, updates)
+    return store.get(req.id)
+
+
+

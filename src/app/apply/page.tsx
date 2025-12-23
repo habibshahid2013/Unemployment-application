@@ -77,17 +77,15 @@ export default function ApplyPage() {
     }
 
     try {
-      // Simulate API submission
-      const res = await fetch('/api/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+      // Real Firestore submission
+      const { saveApplication } = await import('../../lib/db');
+      const result = await saveApplication(user?.id || 'guest', formData);
       
-      const data = await res.json();
-      
+      if (!result.success) throw result.error;
+
       if (optIn) {
-        console.log('Notifying user...', data.id);
+        // In a real app we'd trigger this on the server
+        console.log('Notifying user...', result.id);
       }
 
       // Record successful submission time

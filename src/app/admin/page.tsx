@@ -12,7 +12,7 @@ export default function AdminPage() {
 
   const fetchApplications = async () => {
     try {
-      const res = await fetch('/api/admin');
+      const res = await fetch('/api/v1/admin');
       const data = await res.json();
       // Sort by date desc
       setApplications(data.sort((a: any, b: any) => 
@@ -30,7 +30,7 @@ export default function AdminPage() {
   }, []);
 
   const handleApprove = async (id: string, currentStep: number) => {
-    const res = await fetch('/api/admin', {
+    const res = await fetch('/api/v1/admin', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, action: 'approve' })
