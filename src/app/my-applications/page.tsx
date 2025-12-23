@@ -696,38 +696,50 @@ export default function MyApplicationsPage() {
         fullWidth
         PaperProps={{ sx: { borderRadius: 3 } }}
       >
-        <DialogTitle sx={{ 
-          fontWeight: 700, 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 1,
-          background: 'linear-gradient(135deg, #003865 0%, #0055a5 100%)',
-          color: 'white',
-          py: 2.5
-        }}>
-          <AutoAwesomeIcon />
-          AI-Powered Follow-Up Generator
-        </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
-          {followUpModal && (
-            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              {/* Job Info Header */}
-              <Box sx={{ p: 3, bgcolor: '#f8fafc', borderBottom: '1px solid #e0e0e0' }}>
-                <Typography variant="h6" fontWeight="600" color="#1a1a2e">
-                  {followUpModal.title}
+
+        {followUpModal && (
+          <>
+            <DialogTitle sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="h5" fontWeight={700}>
+                  Follow-Up Assistant
                 </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  {followUpModal.company} • {followUpModal.location}
+                <Typography variant="body2" color="text.secondary">
+                  Generate personalized messages for {followUpModal.company}
                 </Typography>
               </Box>
+            </DialogTitle>
+            <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
               
-              <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {/* Contact Info */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              {/* Job Summary Card */}
+              <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: '#f8f9fa', mt: 1 }}>
+                <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
+                  <Box display="flex" justifyContent="space-between">
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={700}>{followUpModal.title}</Typography>
+                      <Typography variant="body2" color="text.secondary">{followUpModal.company}</Typography>
+                    </Box>
+                    <Chip 
+                      label={STATUS_LABELS[followUpModal.status]} 
+                      size="small"
+                      sx={{ 
+                        bgcolor: STATUS_COLORS[followUpModal.status] + '20',
+                        color: STATUS_COLORS[followUpModal.status],
+                        fontWeight: 600,
+                        borderRadius: 1
+                      }} 
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {/* Contact Info Inputs */}
+              <Box sx={{ display: 'flex', gap: 2 }}>
                   <TextField
                     label="Contact Name (Optional)"
                     value={followUpModal.contactName || ''}
                     onChange={(e) => setFollowUpModal({ ...followUpModal, contactName: e.target.value })}
+                    fullWidth
                     size="small"
                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                   />
@@ -735,22 +747,90 @@ export default function MyApplicationsPage() {
                     label="Contact Email"
                     value={followUpModal.contactEmail || ''}
                     onChange={(e) => setFollowUpModal({ ...followUpModal, contactEmail: e.target.value })}
+                    fullWidth
                     size="small"
                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                   />
                 </Box>
                 
                 {/* Resume Input */}
-                <TextField
-                  label="Paste Your Resume (for personalized message)"
-                  value={resumeText}
-                  onChange={(e) => setResumeText(e.target.value)}
-                  fullWidth
-                  multiline
-                  rows={5}
-                  placeholder="Paste your resume text here for a more personalized follow-up message..."
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                />
+                <Box>
+                  <Typography variant="caption" sx={{ mb: 1, display: 'block', fontWeight: 600, color: 'text.secondary' }}>
+                    RESUME CONTEXT (Optional)
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', gap: 2, mb: 1.5 }}>
+                    <Button
+                      component="label"
+                      variant="outlined"
+                      startIcon={<AutoAwesomeIcon />}
+                      sx={{ 
+                        borderRadius: 2, 
+                        flex: 1, 
+                        borderColor: '#e0e0e0',
+                        color: 'text.primary',
+                        textTransform: 'none',
+                        '&:hover': { borderColor: 'primary.main', bgcolor: 'rgba(25, 118, 210, 0.04)' }
+                      }}
+                    >
+                      Upload Resume (PDF)
+                      <input
+                        type="file"
+                        hidden
+                        accept=".pdf"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            
+                            setGenerating(true);
+                            setToast({ open: true, message: 'Parsing resume...', severity: 'info' });
+                            
+                            try {
+                              const res = await fetch('/api/v1/parse-resume', {
+                                method: 'POST',
+                                body: formData
+                              });
+                              
+                              if (res.ok) {
+                                const data = await res.json();
+                                setResumeText(data.text);
+                                setToast({ open: true, message: 'Resume parsed! You can now edit the text below.', severity: 'success' });
+                              } else {
+                                throw new Error('Failed to parse PDF');
+                              }
+                            } catch (err) {
+                              setToast({ open: true, message: 'Failed to parse resume PDF.', severity: 'error' });
+                            } finally {
+                              setGenerating(false);
+                            }
+                          }
+                        }}
+                      />
+                    </Button>
+                  </Box>
+
+                  <TextField
+                    placeholder="Or paste your resume text here..."
+                    value={resumeText}
+                    onChange={(e) => setResumeText(e.target.value)}
+                    fullWidth
+                    multiline
+                    rows={4}
+                    size="small"
+                    sx={{ 
+                      '& .MuiOutlinedInput-root': { 
+                        borderRadius: 2,
+                        bgcolor: '#fafafa',
+                        fontSize: '0.875rem'
+                      } 
+                    }}
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                    * We extract text locally to generate the email. Your resume is not stored.
+                  </Typography>
+                </Box>
                 
                 <Button
                   variant="contained"
@@ -782,17 +862,21 @@ export default function MyApplicationsPage() {
                       display: 'flex', 
                       flexDirection: 'column', 
                       gap: 2,
+                      mt: 2,
                       p: 3,
                       bgcolor: '#f8fafc',
                       borderRadius: 3,
                       border: '1px solid #e0e0e0'
                     }}>
-                      <Typography variant="subtitle1" fontWeight="700" color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <EmailIcon /> Email Follow-Up
-                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <EmailIcon color="primary" />
+                        <Typography variant="h6" color="primary.main" fontWeight={700}>
+                          Generated Email
+                        </Typography>
+                      </Box>
                       
                       <TextField
-                        label="Subject"
+                        label="Subject Line"
                         value={generatedEmail.subject}
                         onChange={(e) => setGeneratedEmail({ ...generatedEmail, subject: e.target.value })}
                         fullWidth
@@ -806,7 +890,7 @@ export default function MyApplicationsPage() {
                         onChange={(e) => setGeneratedEmail({ ...generatedEmail, body: e.target.value })}
                         fullWidth
                         multiline
-                        rows={6}
+                        rows={8}
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: 'white' } }}
                       />
                       
@@ -869,16 +953,21 @@ export default function MyApplicationsPage() {
                       display: 'flex', 
                       flexDirection: 'column', 
                       gap: 2,
+                      mt: 2,
                       p: 3,
                       bgcolor: '#f0f7ff',
                       borderRadius: 3,
                       border: '1px solid #bbdefb'
                     }}>
-                      <Typography variant="subtitle1" fontWeight="700" sx={{ color: '#0077B5', display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <LinkedInIcon /> LinkedIn Message
-                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <LinkedInIcon color="primary" />
+                        <Typography variant="h6" color="primary.main" fontWeight={700}>
+                          LinkedIn Message
+                        </Typography>
+                      </Box>
                       
                       <TextField
+                        label="Message Body"
                         value={generatedLinkedIn}
                         onChange={(e) => setGeneratedLinkedIn(e.target.value)}
                         fullWidth
@@ -890,32 +979,26 @@ export default function MyApplicationsPage() {
                       <Button
                         variant="outlined"
                         startIcon={<ContentCopyIcon />}
-                        onClick={() => handleCopyToClipboard(generatedLinkedIn, 'LinkedIn message')}
-                        sx={{ 
-                          alignSelf: 'flex-start', 
-                          borderRadius: 2,
-                          borderColor: '#0077B5',
-                          color: '#0077B5',
-                          '&:hover': { borderColor: '#005885', bgcolor: 'rgba(0,119,181,0.05)' }
-                        }}
+                        onClick={() => handleCopyToClipboard(generatedLinkedIn, 'LinkedIn Message')}
+                        sx={{ alignSelf: 'flex-start', borderRadius: 2 }}
                       >
-                        Copy for LinkedIn
+                        Copy Message
                       </Button>
                     </Box>
                   </Fade>
                 )}
-              </Box>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, borderTop: '1px solid #e0e0e0' }}>
-          <Button 
-            onClick={() => { setFollowUpModal(null); setGeneratedEmail(null); setGeneratedLinkedIn(''); }}
-            sx={{ borderRadius: 2 }}
-          >
-            Close
-          </Button>
-        </DialogActions>
+
+            </DialogContent>
+            <DialogActions sx={{ p: 2.5, borderTop: '1px solid #e0e0e0' }}>
+              <Button 
+                onClick={() => { setFollowUpModal(null); setGeneratedEmail(null); setGeneratedLinkedIn(''); }}
+                sx={{ borderRadius: 2 }}
+              >
+                Close
+              </Button>
+            </DialogActions>
+          </>
+        )}
       </Dialog>
 
       {/* Toast */}

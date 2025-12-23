@@ -3,3 +3,5 @@ uvicorn
 requests
 firebase-admin
 pydantic
+pypdf
+python-multipart

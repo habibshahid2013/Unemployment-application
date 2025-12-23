@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from pydantic import BaseModel
@@ -241,6 +241,29 @@ class FollowUpRequest(BaseModel):
     resumeText: Optional[str] = None
     contactName: Optional[str] = None
     contactEmail: Optional[str] = None
+
+import io
+from pypdf import PdfReader
+
+@app.post("/api/v1/parse-resume")
+async def parse_resume(file: UploadFile = File(...)):
+    """Parse text from uploaded PDF resume"""
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    
+    try:
+        content = await file.read()
+        pdf_file = io.BytesIO(content)
+        reader = PdfReader(pdf_file)
+        
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() + "\n"
+            
+        return {"text": text.strip(), "filename": file.filename}
+    except Exception as e:
+        print(f"Error parsing PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to parse resume PDF")
 
 @app.post("/api/v1/generate-followup")
 def generate_followup(req: FollowUpRequest):
