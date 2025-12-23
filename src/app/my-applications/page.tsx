@@ -5,7 +5,7 @@ import {
   Box, Typography, Card, CardContent, Chip, Button, IconButton,
   Select, MenuItem, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
   Tabs, Tab, Tooltip, Fade, Skeleton, Avatar, FormControl, LinearProgress,
-  Snackbar, Alert
+  Snackbar, Alert, CircularProgress
 } from '@mui/material';
 import WorkIcon from '@mui/icons-material/Work';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -20,7 +20,9 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import GoogleIcon from '@mui/icons-material/Google';
 import Link from 'next/link';
+import { useSession, signIn } from 'next-auth/react';
 import {
   JobApplication,
   getApplications,
@@ -33,6 +35,7 @@ import {
 } from '../../lib/applications';
 
 export default function MyApplicationsPage() {
+  const { data: session, status: sessionStatus } = useSession();
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
@@ -45,6 +48,7 @@ export default function MyApplicationsPage() {
   const [generatedEmail, setGeneratedEmail] = useState<{subject: string, body: string} | null>(null);
   const [generatedLinkedIn, setGeneratedLinkedIn] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     loadApplications();
@@ -130,21 +134,62 @@ export default function MyApplicationsPage() {
     setToast({ open: true, message: `${type} copied to clipboard!`, severity: 'success' });
   };
 
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (!generatedEmail || !followUpModal?.contactEmail) return;
     
-    const mailtoLink = `mailto:${followUpModal.contactEmail}?subject=${encodeURIComponent(generatedEmail.subject)}&body=${encodeURIComponent(generatedEmail.body)}`;
-    window.open(mailtoLink, '_blank');
-    
-    updateApplication(followUpModal.id, { 
-      followUpSent: true, 
-      followUpSentAt: new Date().toISOString(),
-      status: 'following_up'
-    });
-    loadApplications();
-    setFollowUpModal(null);
-    setGeneratedEmail(null);
-    setToast({ open: true, message: 'Email client opened! Follow-up marked.', severity: 'success' });
+    // If authenticated with Gmail, send directly
+    if (session?.accessToken) {
+      setSendingEmail(true);
+      try {
+        const res = await fetch('/api/gmail/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: session.accessToken,
+            to: followUpModal.contactEmail,
+            subject: generatedEmail.subject,
+            body: generatedEmail.body,
+          }),
+        });
+        
+        if (res.ok) {
+          updateApplication(followUpModal.id, { 
+            followUpSent: true, 
+            followUpSentAt: new Date().toISOString(),
+            status: 'following_up'
+          });
+          loadApplications();
+          setFollowUpModal(null);
+          setGeneratedEmail(null);
+          setToast({ open: true, message: '✅ Email sent via Gmail!', severity: 'success' });
+        } else {
+          const error = await res.json();
+          throw new Error(error.details || 'Failed to send');
+        }
+      } catch (err: any) {
+        setToast({ open: true, message: `Failed to send: ${err.message}`, severity: 'error' });
+      } finally {
+        setSendingEmail(false);
+      }
+    } else {
+      // Fallback to mailto:
+      const mailtoLink = `mailto:${followUpModal.contactEmail}?subject=${encodeURIComponent(generatedEmail.subject)}&body=${encodeURIComponent(generatedEmail.body)}`;
+      window.open(mailtoLink, '_blank');
+      
+      updateApplication(followUpModal.id, { 
+        followUpSent: true, 
+        followUpSentAt: new Date().toISOString(),
+        status: 'following_up'
+      });
+      loadApplications();
+      setFollowUpModal(null);
+      setGeneratedEmail(null);
+      setToast({ open: true, message: 'Email client opened! Follow-up marked.', severity: 'success' });
+    }
+  };
+
+  const handleConnectGmail = () => {
+    signIn('google', { callbackUrl: '/my-applications' });
   };
 
   const getStatusGradient = (status: string) => {
@@ -765,20 +810,46 @@ export default function MyApplicationsPage() {
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: 'white' } }}
                       />
                       
-                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                        <Button
-                          variant="contained"
-                          startIcon={<EmailIcon />}
-                          onClick={handleSendEmail}
-                          disabled={!followUpModal.contactEmail}
-                          sx={{ 
-                            borderRadius: 2,
-                            background: 'linear-gradient(135deg, #4285F4 0%, #1a73e8 100%)',
-                            fontWeight: 600
-                          }}
-                        >
-                          Open in Email Client
-                        </Button>
+                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {session?.accessToken ? (
+                          <Button
+                            variant="contained"
+                            startIcon={sendingEmail ? <CircularProgress size={18} color="inherit" /> : <EmailIcon />}
+                            onClick={handleSendEmail}
+                            disabled={!followUpModal.contactEmail || sendingEmail}
+                            sx={{ 
+                              borderRadius: 2,
+                              background: 'linear-gradient(135deg, #4285F4 0%, #1a73e8 100%)',
+                              fontWeight: 600
+                            }}
+                          >
+                            {sendingEmail ? 'Sending...' : 'Send via Gmail'}
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant="contained"
+                              startIcon={<GoogleIcon />}
+                              onClick={handleConnectGmail}
+                              sx={{ 
+                                borderRadius: 2,
+                                background: 'linear-gradient(135deg, #EA4335 0%, #FBBC04 50%, #34A853 100%)',
+                                fontWeight: 600
+                              }}
+                            >
+                              Connect Gmail
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              startIcon={<EmailIcon />}
+                              onClick={handleSendEmail}
+                              disabled={!followUpModal.contactEmail}
+                              sx={{ borderRadius: 2 }}
+                            >
+                              Open in Email Client
+                            </Button>
+                          </>
+                        )}
                         <Button
                           variant="outlined"
                           startIcon={<ContentCopyIcon />}
