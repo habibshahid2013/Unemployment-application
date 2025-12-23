@@ -1,32 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Button, TextField, Typography, Card, CardContent, Alert } from '@mui/material';
 import { useAuth } from '../../../lib/auth';
+import { Box, Paper, Typography, TextField, Button, Alert, Divider } from '@mui/material';
+import GoogleIcon from '@mui/icons-material/Google';
 
 export default function LoginPage() {
-  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Please enter both email and password.');
-      return;
-    }
-    // Simulate auth check
-    if (password.length < 4) {
-        setError('Password must be at least 4 characters.');
-        return;
-    }
-    
-    login(email);
+    await login(email, password, 'mock');
+  };
+
+  const handleGoogleLogin = async () => {
+    await login(undefined, undefined, 'google');
   };
 
   return (
-    <Box sx={{ 
     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
       <Paper elevation={0} sx={{ p: 4, width: '100%', maxWidth: 400, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
         <Typography variant="h5" component="h1" gutterBottom fontWeight="bold" align="center">
