@@ -67,6 +67,16 @@ graph TB
     end
 ```
 
+<div class="diagram-container">
+    <h3>Architecture Rationale</h3>
+    <p>We chose this <strong>Hybrid Architecture</strong> to combine the best of both worlds:</p>
+    <ul>
+        <li><strong>User Experience (Next.js)</strong>: Ensures fast, accessible, and SEO-friendly interfaces for job seekers.</li>
+        <li><strong>AI Capabilities (Python)</strong>: Direct access to Python's robust libraries for resume parsing and LLM integration without complex bridging.</li>
+        <li><strong>Scalability</strong>: Computationally heavy AI tasks don't block the UI rendering thread.</li>
+    </ul>
+</div>
+
 ## 2. Technology Stack
 
 | Layer | Technology | Purpose |
