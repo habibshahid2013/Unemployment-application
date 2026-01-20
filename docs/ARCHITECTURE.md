@@ -12,13 +12,13 @@ The application follows a **Hybrid Architecture** leveraging the best of **Next.
 
 ```mermaid
 graph TD
-    User[User / Job Seeker] -->|Browser| Client[Next.js Frontend]
+    User["User / Job Seeker"] -->|Browser| Client[Next.js Frontend]
     Client -->|API Calls| API[Python FastAPI Server]
     Client -->|Auth| Firebase[Firebase Auth]
 
     subgraph "Backend Services"
-        API -->|Search Jobs| SerpApi[SerpApi / Google Jobs]
-        API -->|Generate Content| Groq[Groq AI / LLaMA 3]
+        API -->|Search Jobs| SerpApi["SerpApi / Google Jobs"]
+        API -->|Generate Content| Groq["Groq AI / LLaMA 3"]
         API -->|Store Data| Firestore[Firebase Cloud Firestore]
     end
 

@@ -53,17 +53,17 @@ High-level view of how users interact with the platform.
 
 ```mermaid
 graph TB
-    User[Job Seeker] -->|Uses| WebApp[Next.js Web App]
+    User["Job Seeker"] -->|Uses| WebApp[Next.js Web App]
     
     subgraph "NorthStar Works Platform"
         WebApp -->|API Requests| API[FastAPI Backend]
         WebApp -->|Auth| Firebase[Firebase Auth]
-        API -->|Read/Write| DB[(Firestore)]
+        API -->|Read/Write| DB[("Firestore")]
     end
     
     subgraph "External Integration"
-        API -->|Search Jobs| Google[Google Jobs API]
-        API -->|AI Content| Groq[Groq AI / LLaMA 3]
+        API -->|Search Jobs| Google["Google Jobs API"]
+        API -->|AI Content| Groq["Groq AI / LLaMA 3"]
     end
 ```
 

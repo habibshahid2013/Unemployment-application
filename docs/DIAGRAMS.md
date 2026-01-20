@@ -6,16 +6,16 @@ High-level view of how users interact with the NorthStar Works platform and exte
 
 ```mermaid
 graph TB
-    User[Job Seeker / Claimant]
+    User["Job Seeker / Claimant"]
 
     subgraph "NorthStar Works Platform"
         WebApp[Next.js Web Application]
         API[FastAPI Backend Service]
-        DB[(Firebase Firestore)]
+        DB[("Firebase Firestore")]
     end
 
     subgraph "External Systems"
-        Google[Google Jobs (SerpApi)]
+        Google["Google Jobs (SerpApi)"]
         Groq[Groq AI Platform]
         AuthService[Firebase Auth]
     end
