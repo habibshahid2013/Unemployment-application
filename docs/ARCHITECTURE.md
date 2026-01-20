@@ -29,6 +29,14 @@ graph TD
     end
 ```
 
+### Architecture Rationale: Why Hybrid?
+
+This architecture was chosen to leverage the specific strengths of both ecosystems:
+
+- **Next.js (Frontend)**: Delivers a high-performance, SEO-optimized user interface with server-side rendering, ensuring quick load times and accessibility for all users.
+- **FastAPI (Backend)**: Provides the speed and concurrency needed for real-time API requests while offering native access to Python's superior AI and data science libraries (essential for our resume parsing and LLM features).
+- **Decoupled Scalability**: The frontend and backend can scale independently based on load (e.g., heavy traffic on the UI vs. heavy compute on the AI/job search).
+
 ### Technology Stack
 
 | Layer          | Technology            | Purpose                                         |
