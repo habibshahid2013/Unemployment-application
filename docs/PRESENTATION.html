@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NorthStar Works - System Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown-light.min.css"
+    />
+    <style>
+      body {
+        box-sizing: border-box;
+        min-width: 200px;
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 45px;
+      }
+      .markdown-body {
+        box-sizing: border-box;
+        min-width: 200px;
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 45px;
+      }
+      @media (max-width: 767px) {
+        .markdown-body {
+          padding: 15px;
+        }
+      }
+      .diagram-container {
+        text-align: center;
+        margin: 20px 0;
+        background: #f6f8fa;
+        padding: 20px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="content" class="markdown-body"></div>
+
+    <textarea id="markdown-source" style="display: none">
+# NorthStar Works - System Architecture
+
+## Executive Summary
+**NorthStar Works** is a unified digital platform designed to support Minnesotans through career transitions. It combines efficient **Unemployment Insurance (UI)** management with powerful, AI-driven **Job Search** capabilities.
+
+## 1. System Context Diagram
+High-level view of how users interact with the platform.
+
+```mermaid
+graph TB
+    User[Job Seeker] -->|Uses| WebApp[Next.js Web App]
+    
+    subgraph "NorthStar Works Platform"
+        WebApp -->|API Requests| API[FastAPI Backend]
+        WebApp -->|Auth| Firebase[Firebase Auth]
+        API -->|Read/Write| DB[(Firestore)]
+    end
+    
+    subgraph "External Integration"
+        API -->|Search Jobs| Google[Google Jobs API]
+        API -->|AI Content| Groq[Groq AI / LLaMA 3]
+    end
+```
+
+## 2. Technology Stack
+
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| **Frontend** | Next.js 16 (React) | Application framework, SSR |
+| **Backend** | Python FastAPI | API, AI Orchestration |
+| **Database** | Firebase Firestore | Application Data |
+| **Auth** | Firebase Auth | User authentication |
+| **AI** | Groq (Llama 3) | Resume parsing, Content Gen |
+
+## 3. Job Search Sequence
+How the real-time search and AI suggestions work together.
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant FE as Frontend
+    participant API as Backend
+    participant SERP as Google Jobs
+    participant AI as Groq LLM
+
+    U->>FE: Search "Software Engineer"
+    FE->>API: GET /search?q=Software...
+    
+    par Parallel Execution
+        API->>SERP: Fetch Job Listings
+        API->>AI: Generate Related Roles
+    end
+    
+    API->>API: Process & Score Results
+    API->>FE: Return Jobs + Suggestions
+    FE->>U: Render Job Cards
+```
+
+## 4. Application Flow (State Machine)
+The logic governing unemployment claims.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted: User Files Claim
+    Submitted --> Reviewing: Auto-Validation
+    
+    state Reviewing {
+        [*] --> IdentityCheck
+        IdentityCheck --> IncomeCheck
+        IncomeCheck --> [*]
+    }
+    
+    Reviewing --> Approved: Success
+    Reviewing --> Denied: Ineligible
+    
+    Approved --> PaymentIssued: Weekly Request
+    PaymentIssued --> [*]
+```
+
+## 5. Security Architecture
+- **Environment Variables**: API keys (SerpApi, Groq) kept server-side.
+- **Validation**: Pydantic models ensure strict data types.
+- **Authentication**: JWT-based session management via NextAuth/Firebase.
+    </textarea>
+
+    <script>
+      // Initialize Mermaid
+      mermaid.initialize({ startOnLoad: false, theme: "default" });
+
+      // Get Markdown
+      const markdown = document.getElementById("markdown-source").value;
+
+      // Configure Marked to handle Mermaid code blocks
+      const renderer = new marked.Renderer();
+      const originalCodeRenderer = renderer.code.bind(renderer);
+
+      renderer.code = (code, language) => {
+        if (language === "mermaid") {
+          return `<div class="mermaid">${code}</div>`;
+        }
+        return originalCodeRenderer(code, language);
+      };
+
+      // Parse Markdown
+      document.getElementById("content").innerHTML = marked.parse(markdown, {
+        renderer,
+      });
+
+      // Render Mermaid Diagrams
+      setTimeout(() => {
+        mermaid.run();
+      }, 100);
+    </script>
+  </body>
+</html>
