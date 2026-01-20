@@ -1,3 +1,12 @@
+/**
+ * @file src/app/page.tsx
+ * @description Landing page and main Job Search interface for NorthStar Works.
+ * @architecture Presentation Layer (UI)
+ * @dependencies Material UI, React, Next.js Router
+ * @dataFlow User Input -> State -> API Fetch (/api/v1/search) -> Render JobCards
+ * @securityConsiderations Publicly accessible page. No auth required for search.
+ * @aiIntegration Displays AI-suggested job titles and alternatives.
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -506,7 +515,23 @@ export default function Home() {
                        }}>
                          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                            <Box display="flex" justifyContent="space-between" mb={1.5} alignItems="flex-start" gap={1}>
-                              <Typography variant="h6" fontWeight="800" sx={{ lineHeight: 1.3, color: '#003865', wordBreak: 'break-word' }}>{job.title}</Typography>
+                              <Typography 
+                                variant="h6" 
+                                fontWeight="800" 
+                                component="a"
+                                href={job.url || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{ 
+                                  lineHeight: 1.3, 
+                                  color: '#003865', 
+                                  wordBreak: 'break-word',
+                                  textDecoration: 'none',
+                                  '&:hover': { textDecoration: 'underline', color: '#0055a5' }
+                                }}
+                              >
+                                {job.title}
+                              </Typography>
                               <Chip 
                                 label={style.label} 
                                 size="small" 

@@ -854,10 +854,17 @@ function SearchContent() {
                         <Typography 
                           variant="h6" 
                           fontWeight="700"
+                          component="a"
+                          href={job.url || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           sx={{ 
                             color: '#003865',
                             mb: 0.5,
-                            wordBreak: 'break-word'
+                            wordBreak: 'break-word',
+                            textDecoration: 'none',
+                            display: 'block',
+                            '&:hover': { textDecoration: 'underline', color: '#0055a5' }
                           }}
                         >
                           {job.title}
@@ -945,7 +952,6 @@ function SearchContent() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => handleApply(job)}
-                        disabled={hasApplied}
                         endIcon={<OpenInNewIcon />}
                         sx={{ 
                           borderRadius: 2,

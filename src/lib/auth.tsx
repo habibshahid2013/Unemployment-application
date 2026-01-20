@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check local storage for mock session
     const storedUser = localStorage.getItem("mock_user");
     if (storedUser) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUser(JSON.parse(storedUser));
     }
 

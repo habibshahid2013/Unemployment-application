@@ -7,6 +7,7 @@ import { CacheProvider } from '@emotion/react';
 
 // This implementation is taken from the Material UI Next.js example
 // to ensure Emotion works correctly with the App Router.
+// @ts-ignore
 export default function NextAppDirEmotionCacheProvider(props: any) {
   const { options, children } = props;
 

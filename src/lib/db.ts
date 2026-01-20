@@ -1,7 +1,8 @@
 import { db } from './firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { Job } from './linkedin';
 
-export async function saveApplication(userId: string, formData: any) {
+export async function saveApplication(userId: string, formData: Record<string, unknown>) {
   try {
     const response = await fetch('/api/v1/apply', {
       method: 'POST',
@@ -20,7 +21,17 @@ export async function saveApplication(userId: string, formData: any) {
 }
 
 // Chat Functions
-export function subscribeToMessages(callback: (messages: any[]) => void) {
+interface Message {
+    id: string;
+    userId: string;
+    userName: string;
+    text: string;
+    timestamp: unknown;
+    type?: 'text' | 'job-share';
+    jobDetails?: Job | null;
+}
+
+export function subscribeToMessages(callback: (messages: Message[]) => void) {
   if (!db) return () => {};
 
   const q = query(collection(db, 'messages'), orderBy('timestamp', 'desc'), limit(50));
@@ -29,13 +40,14 @@ export function subscribeToMessages(callback: (messages: any[]) => void) {
     const messages = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    })).reverse(); // Show oldest first in chat UI usually, or usually newest at bottom. 
-                   // If we fetch desc (newest first), reversing makes them chronological (oldest top).
-    callback(messages);
+    })) as Message[]; 
+    
+    // Reverse to show chronological (oldest at top of list if UI expects that)
+    callback(messages.reverse());
   });
 }
 
-export async function sendMessage(userId: string, userName: string, text: string, type: 'text' | 'job-share' = 'text', jobDetails?: any) {
+export async function sendMessage(userId: string, userName: string, text: string, type: 'text' | 'job-share' = 'text', jobDetails?: Job) {
   if (!db) return;
 
   try {

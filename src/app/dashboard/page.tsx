@@ -10,11 +10,24 @@ import WorkIcon from '@mui/icons-material/Work';
 import { useEffect, useState, Suspense } from 'react';
 import LinkedInConnect from '../../components/LinkedInConnect';
 
+// Define Status Data Interface
+interface StatusData {
+  id: string;
+  firstName: string;
+  status: string;
+  progress: number;
+  step: number;
+  estimatedCompletion: string;
+  week: string;
+  workLog: Array<{ id: string; jobTitle: string; company: string; dateApplied: string }>;
+  notifications: Array<{ id: number; type: string; message: string; date: string }>;
+}
+
 function DashboardContent() {
   const searchParams = useSearchParams();
   const [showToast, setShowToast] = useState(false);
 
-  const [statusData, setStatusData] = useState<any>(null);
+  const [statusData, setStatusData] = useState<StatusData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

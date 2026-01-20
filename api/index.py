@@ -1,6 +1,19 @@
+"""
+@file api/index.py
+@description Main entry point for the Python FastAPI backend. Handles job search (SerpApi), AI generation (Groq), and data persistence (Firebase).
+@architecture Infrastructure Layer & Application Layer
+@dependencies FastAPI, Firebase Admin, SerpApi, Groq Client
+@dataFlow Client -> FastAPI -> External Services (Google/Groq) -> Client
+@securityConsiderations API Keys stored in env vars. CORS configured for development.
+@aiIntegration Uses Groq (LLaMA 3) for resume parsing and follow-up email generation.
+"""
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from pydantic import BaseModel
 
 app = FastAPI(docs_url="/api/v1/docs", openapi_url="/api/v1/openapi.json")
@@ -84,23 +97,44 @@ def search_jobs(
         all_jobs = []
         seen_ids = set()
         
-        # Fetch up to 3 pages
-        for page in range(3):
+        # Fetch up to 4 pages (40 results max target)
+        next_page_token = None
+        
+        for page in range(4):
             params = base_params.copy()
-            if page > 0:
-                params["start"] = page * 10
+            if next_page_token:
+                params["next_page_token"] = next_page_token
+            
+            print(f"Fetching Page {page}...")
             
             try:
-                response = requests.get(url, params=params, timeout=10)
-                # If a secondary page fails, we just return the results from the successful pages
+                response = requests.get(url, params=params, timeout=12)
+                
                 if response.status_code != 200:
                     print(f"SerpApi Page {page} failed with {response.status_code}: {response.text}")
                     break
                 
                 data = response.json()
+                if "error" in data:
+                    print(f"SerpApi Error on Page {page}: {data['error']}")
+                    break
+                    
                 jobs_list = data.get("jobs_results", [])
+                print(f"Page {page} returned {len(jobs_list)} jobs")
+                
                 if not jobs_list:
-                    break 
+                    print(f"No more jobs on page {page}, stopping.")
+                    break
+                
+                # Get next page token
+                serpapi_pagination = data.get("serpapi_pagination", {})
+                next_page_token = serpapi_pagination.get("next_page_token")
+                
+                if not next_page_token:
+                     print(f"No next_page_token found on page {page}, stopping.")
+                     # Only break if we didn't find jobs, otherwise let the current batch process
+                     if not jobs_list:
+                         break
             except Exception as e:
                 print(f"Error fetching SerpApi page {page}: {e}")
                 break

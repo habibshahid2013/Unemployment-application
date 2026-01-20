@@ -221,16 +221,25 @@ export default function MyApplicationsPage() {
         
         <Box maxWidth="lg" mx="auto" sx={{ position: 'relative', zIndex: 1 }}>
           {/* Navigation */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            mb: 4,
+            gap: 2
+          }}>
             <Link href="/work-search" passHref>
               <Button 
                 startIcon={<ArrowBackIcon />}
+                fullWidth={false}
                 sx={{ 
                   color: 'white', 
                   bgcolor: 'rgba(255,255,255,0.15)',
                   backdropFilter: 'blur(10px)',
                   borderRadius: 2,
                   px: 2,
+                  width: { xs: '100%', sm: 'auto' },
                   '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' }
                 }}
               >
@@ -242,12 +251,14 @@ export default function MyApplicationsPage() {
               <Button 
                 variant="contained"
                 startIcon={<WorkIcon />}
+                fullWidth={false}
                 sx={{
                   background: 'rgba(255,255,255,0.2)',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(255,255,255,0.3)',
                   borderRadius: 2,
                   fontWeight: 600,
+                  width: { xs: '100%', sm: 'auto' },
                   '&:hover': { background: 'rgba(255,255,255,0.3)' }
                 }}
               >
@@ -265,7 +276,7 @@ export default function MyApplicationsPage() {
           </Typography>
 
           {/* Stats Cards - Glassmorphism style */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(5, 1fr)' }, gap: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(5, 1fr)' }, gap: 2 }}>
             {[
               { label: 'Total', value: stats.total, gradient: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%)' },
               { label: 'Applied', value: stats.applied, gradient: 'linear-gradient(135deg, rgba(33,150,243,0.3) 0%, rgba(33,150,243,0.15) 100%)' },
@@ -429,26 +440,42 @@ export default function MyApplicationsPage() {
                         />
                       )}
                       
-                      <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start' }}>
+                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2.5, alignItems: { xs: 'stretch', sm: 'flex-start' } }}>
                         {/* Logo */}
-                        <Avatar 
-                          src={app.logoUrl || undefined}
-                          variant="rounded"
-                          sx={{ 
-                            width: 64, height: 64, 
-                            bgcolor: app.logoUrl ? 'white' : 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
-                            border: '1px solid #eee',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-                          }}
-                        >
-                          {!app.logoUrl && <WorkIcon sx={{ color: '#999', fontSize: 28 }} />}
-                        </Avatar>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Avatar 
+                            src={app.logoUrl || undefined}
+                            variant="rounded"
+                            sx={{ 
+                                width: 64, height: 64, 
+                                bgcolor: app.logoUrl ? 'white' : 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
+                                border: '1px solid #eee',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                            }}
+                            >
+                            {!app.logoUrl && <WorkIcon sx={{ color: '#999', fontSize: 28 }} />}
+                            </Avatar>
+                            
+                            {/* Mobile Actions (Top Right) */}
+                            <Box sx={{ display: { xs: 'flex', sm: 'none' }, gap: 0.5 }}>
+                                <Tooltip title="Edit notes" arrow>
+                                <IconButton size="small" onClick={() => setEditModal(app)} sx={{ bgcolor: '#f5f5f5' }}>
+                                    <EditIcon fontSize="small" />
+                                </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Remove" arrow>
+                                <IconButton size="small" onClick={() => handleDelete(app)} sx={{ bgcolor: '#fff5f5', color: '#F44336' }}>
+                                    <DeleteIcon fontSize="small" />
+                                </IconButton>
+                                </Tooltip>
+                            </Box>
+                        </Box>
                         
                         {/* Job Info */}
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 1 }}>
+                          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 2, mb: 1 }}>
                             <Box>
-                              <Typography variant="h6" fontWeight="700" color="#1a1a2e" sx={{ lineHeight: 1.3 }}>
+                              <Typography variant="h6" fontWeight="700" color="#1a1a2e" sx={{ lineHeight: 1.3, wordBreak: 'break-word' }}>
                                 {app.title}
                               </Typography>
                               <Typography variant="subtitle1" color="text.secondary" fontWeight="500">
@@ -457,7 +484,7 @@ export default function MyApplicationsPage() {
                             </Box>
                             
                             {/* Status Select */}
-                            <FormControl size="small">
+                            <FormControl size="small" sx={{ width: { xs: '100%', md: 'auto' }, mt: { xs: 1, md: 0 } }}>
                               <Select
                                 value={app.status}
                                 onChange={(e) => handleStatusChange(app, e.target.value as JobApplication['status'])}
@@ -506,7 +533,7 @@ export default function MyApplicationsPage() {
                                   color: '#2E7D32',
                                   fontWeight: 600 
                                 }} 
-                              />
+                                />
                             )}
                             {app.followUpSent && (
                               <Chip 
@@ -534,10 +561,29 @@ export default function MyApplicationsPage() {
                               📝 {app.notes.substring(0, 120)}{app.notes.length > 120 ? '...' : ''}
                             </Typography>
                           )}
+                          
+                          {/* Mobile Main Action */}
+                          <Box sx={{ display: { xs: 'flex', sm: 'none' }, mt: 2 }}>
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    fullWidth
+                                    startIcon={<EmailIcon />}
+                                    onClick={() => setFollowUpModal(app)}
+                                    sx={{
+                                    borderRadius: 2,
+                                    fontWeight: 600,
+                                    background: 'linear-gradient(135deg, #78BE20 0%, #5da010 100%)',
+                                    boxShadow: '0 2px 8px rgba(120,190,32,0.3)',
+                                    }}
+                                >
+                                    Follow Up
+                                </Button>
+                          </Box>
                         </Box>
                         
-                        {/* Actions */}
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-end' }}>
+                        {/* Desktop Actions */}
+                        <Box sx={{ display: { xs: 'none', sm: 'flex' }, flexDirection: 'column', gap: 1, alignItems: 'flex-end' }}>
                           <Button
                             variant="contained"
                             size="small"
@@ -743,7 +789,7 @@ export default function MyApplicationsPage() {
               </Card>
 
               {/* Contact Info Inputs */}
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                   <TextField
                     label="Contact Name (Optional)"
                     value={followUpModal.contactName || ''}

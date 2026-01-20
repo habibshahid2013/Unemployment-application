@@ -60,6 +60,13 @@ NorthStar Works is a modern, unified platform for Minnesota residents to manage 
 - **Bonus Points**: +50 bonus for completing weekly goal
 - **Profile Strength**: Gamified dashboard with engagement metrics
 
+## Architecture & Documentation
+
+Comprehensive documentation can be found in the `docs/` directory:
+
+- [**Architecture Overview**](docs/ARCHITECTURE.md): System design, data flow, and tech stack details.
+- [**System Diagrams**](docs/DIAGRAMS.md): Visual representations of workflows and architecture.
+
 ---
 
 ## 🛠️ Tech Stack

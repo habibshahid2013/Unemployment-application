@@ -1,5 +1,3 @@
-import { Snackbar, Alert } from '@mui/material';
-
 // Interface for simulation purposes
 export interface NotificationAttempt {
   type: 'sms' | 'email';

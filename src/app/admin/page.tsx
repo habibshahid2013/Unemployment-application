@@ -6,8 +6,18 @@ import {
   TableContainer, TableHead, TableRow, Button, Chip, LinearProgress, Alert
 } from '@mui/material';
 
+interface Application {
+  id: string;
+  firstName: string;
+  lastName: string;
+  submittedAt: string;
+  status: string;
+  progress: number;
+  step: number;
+}
+
 export default function AdminPage() {
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchApplications = async () => {
@@ -15,7 +25,7 @@ export default function AdminPage() {
       const res = await fetch('/api/v1/admin');
       const data = await res.json();
       // Sort by date desc
-      setApplications(data.sort((a: any, b: any) => 
+      setApplications(data.sort((a: Application, b: Application) => 
         new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
       ));
     } catch (error) {
@@ -29,7 +39,7 @@ export default function AdminPage() {
     fetchApplications();
   }, []);
 
-  const handleApprove = async (id: string, currentStep: number) => {
+  const handleApprove = async (id: string, _currentStep: number) => {
     const res = await fetch('/api/v1/admin', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -83,7 +93,7 @@ export default function AdminPage() {
                        <TableCell>
                          <Chip 
                            label={app.status} 
-                           color={getStatusColor(app.status) as any} 
+                           color={getStatusColor(app.status) as 'success' | 'default' | 'primary'} 
                            size="small" 
                          />
                        </TableCell>
