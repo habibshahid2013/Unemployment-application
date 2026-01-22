@@ -189,6 +189,7 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_id
 - **Endpoint**: `https://serpapi.com/search?engine=google_jobs`
 - **Features**: Job title, company, salary, qualifications, apply links, company logos
 - **Pricing**: 100 free searches/month, then paid plans
+- **Get API Key**: [Sign up at serpapi.com](https://serpapi.com/users/sign_up)
 - **Docs**: [serpapi.com/google-jobs-api](https://serpapi.com/google-jobs-api)
 
 ### 2. Groq Cloud (LLM)
@@ -198,6 +199,7 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_id
 - **Endpoint**: `https://api.groq.com/openai/v1/chat/completions`
 - **Features**: Fast inference, OpenAI-compatible API
 - **Pricing**: Free tier available
+- **Get API Key**: [Sign up at console.groq.com](https://console.groq.com/login)
 - **Docs**: [console.groq.com/docs](https://console.groq.com/docs)
 
 ### 3. Google OAuth & Gmail API
@@ -206,6 +208,7 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_id
 - **Scopes**: `gmail.send`, `email`, `profile`
 - **Features**: Direct email sending without opening email client
 - **Setup**: See `docs/GMAIL_OAUTH_SETUP.md`
+- **Get Config**: [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
 - **Docs**: [developers.google.com/gmail](https://developers.google.com/gmail/api)
 
 ---
