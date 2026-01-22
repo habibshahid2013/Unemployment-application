@@ -100,7 +100,7 @@ Data persistence is handled via Firestore.
 
 ## Security Considerations
 
-- **API Keys**: All sensitive keys (SerpApi, Groq, Firebase Admin) are stored in server-side Environment Variables.
+- **API Keys**: All sensitive keys (SerpApi, Groq, Firebase Admin) are stored in server-side Environment Variables. The backend explicitly loads `.env.local` for seamless local development parity with Next.js.
 - **Validation**: Pydantic models in FastAPI ensure strict request validation.
 - **Auth**: Client-side tokens are verified against Firebase.
 

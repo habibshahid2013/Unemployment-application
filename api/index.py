@@ -2,7 +2,7 @@
 @file api/index.py
 @description Main entry point for the Python FastAPI backend. Handles job search (SerpApi), AI generation (Groq), and data persistence (Firebase).
 @architecture Infrastructure Layer & Application Layer
-@dependencies FastAPI, Firebase Admin, SerpApi, Groq Client
+@dependencies FastAPI, Firebase Admin, SerpApi, Groq Client, python-dotenv
 @dataFlow Client -> FastAPI -> External Services (Google/Groq) -> Client
 @securityConsiderations API Keys stored in env vars. CORS configured for development.
 @aiIntegration Uses Groq (LLaMA 3) for resume parsing and follow-up email generation.

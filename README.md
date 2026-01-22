@@ -130,7 +130,7 @@ Comprehensive documentation can be found in the `docs/` directory:
 
 ```bash
 # Install Python dependencies
-pip install fastapi requests python-dotenv
+pip install fastapi requests python-dotenv firebase-admin uvicorn pydantic pypdf python-multipart
 
 # The API is integrated via vercel.json rewrites
 # Just run npm run dev and it works!
