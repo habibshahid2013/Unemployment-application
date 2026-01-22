@@ -5,3 +5,4 @@ firebase-admin
 pydantic
 pypdf
 python-multipart
+python-dotenv
