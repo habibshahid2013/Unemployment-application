@@ -88,10 +88,22 @@ export async function searchJobs(
 
   // Fallback to Mock Data
   await new Promise(resolve => setTimeout(resolve, 600)); 
-  return MOCK_JOBS.filter(job => 
-    (job.title.toLowerCase().includes(query.toLowerCase()) || query === '') &&
-    (job.location.toLowerCase().includes(location.toLowerCase()) || location === '')
-  );
+  // Relaxed filtering for Mock Data
+  return MOCK_JOBS.filter(job => {
+    const q = query.toLowerCase();
+    const l = location.toLowerCase();
+    
+    const titleMatch = job.title.toLowerCase().includes(q) || 
+                       job.company.toLowerCase().includes(q) || 
+                       job.description.toLowerCase().includes(q) || 
+                       q === '';
+                       
+    const locationMatch = l === '' || 
+                          job.location.toLowerCase().includes(l) || 
+                          (l === 'minnesota' && job.location.includes('MN'));
+                          
+    return titleMatch && locationMatch;
+  });
 }
 
 
