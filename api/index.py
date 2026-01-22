@@ -12,7 +12,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
 
+# Load .env first, then override with .env.local if present
 load_dotenv()
+load_dotenv(".env.local")
 
 from pydantic import BaseModel
 
