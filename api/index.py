@@ -14,7 +14,10 @@ from dotenv import load_dotenv
 
 # Load .env first, then override with .env.local if present
 load_dotenv()
-load_dotenv(".env.local")
+try:
+    load_dotenv(".env.local")
+except:
+    pass
 
 from pydantic import BaseModel
 
